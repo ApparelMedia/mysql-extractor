@@ -92,7 +92,7 @@ Foreign Keys
 ```json
 [
   {
-    "name": "tbl_programs_budgets",
+    "name": "budgets",
     "foreignKeys": [
         {
             "foreign": "program_id",
