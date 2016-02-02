@@ -1,0 +1,15 @@
+{
+  "name": "pear-db",
+  "version": "0.1.0",
+  "description": "Create Pear DB Database JSON",
+  "main": "index.js",
+  "scripts": {
+    "test": "node example"
+  },
+  "author": "Hao Luo <howlowck@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.0.1",
+    "mysql": "^2.10.2"
+  }
+}
