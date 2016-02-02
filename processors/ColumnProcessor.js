@@ -81,7 +81,7 @@ class ColumnProcessor  {
     return this.raw.map(function (rowData) {
       let name = rowData.Field;
       let type = getRowType(rowData);
-      let nullable = NullableDetector(rowData)
+      let nullable = NullableDetector(rowData);
       let primaryKey = PrimaryKeyDetector(rowData);
       let unsigned = UnsignedDetector(rowData);
       let incrementing = IncrementingDetector(rowData);
