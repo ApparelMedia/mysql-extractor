@@ -39,6 +39,7 @@ mySqlExtractor.createForeignKeyFile();
 Table JSON
 ```json
 [
+  {
     "name": "budgets",
     "columns": [
         {
@@ -82,7 +83,7 @@ Table JSON
             "rawType": "decimal(8,2)"
         }
       ]
-  	}
+  }	
 ]
 ```
 
