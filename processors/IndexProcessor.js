@@ -13,7 +13,8 @@ class IndexProcessor {
         return filtered.map(function (rawKeyInfo) {
             let column = rawKeyInfo.Column_name;
             let unique = ! rawKeyInfo.Non_unique;
-            return {column, unique};
+            let indexType = rawKeyInfo.Index_type;
+            return {column, unique, indexType};
         })
     }
 }
