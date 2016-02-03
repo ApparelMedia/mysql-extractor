@@ -20,8 +20,8 @@ class ForeignKeyTableAssembler {
     }
     getTableObj() {
         let name = this.getName();
-        let foreignKeys = this.processor.getArray();
-        return {name, foreignKeys};
+        let indexes = this.processor.getArray();
+        return {name, indexes};
     }
 }
 
