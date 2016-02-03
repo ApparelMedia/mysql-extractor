@@ -5,7 +5,7 @@ class ForeignKeyProcessor {
         this.raw = keyInfoArray;
     }
 
-    getKeysArray() {
+    getArray() {
         return this.raw.map(function (rawKeyInfo) {
             let foreign = rawKeyInfo.COLUMN_NAME;
             let on = rawKeyInfo.REFERENCED_TABLE_NAME;

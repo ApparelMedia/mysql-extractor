@@ -10,7 +10,7 @@ let ColumnProcessor = require('../processors/ColumnProcessor');
 }
 
 */
-class TableProcessor {
+class ColumnTableAssembler {
   constructor(tableName, rowData) {
     this.name = tableName;
     this.processor = new ColumnProcessor(rowData);
@@ -20,9 +20,9 @@ class TableProcessor {
   }
   getTableObj() {
     let name = this.getName();
-    let columns = this.processor.getColumnsArray();
+    let columns = this.processor.getArray();
     return {name, columns};
   }
 }
 
-module.exports = TableProcessor;
+module.exports = ColumnTableAssembler;

@@ -3,8 +3,9 @@
 let mysql = require('mysql');
 let _ = require('lodash');
 let fs = require('fs');
-let TableProcessor = require('./assemblers/ColumnTableProcessor');
-let ForeignKeyTableProcessor = require('./assemblers/ForeignKeyTableProcessor')
+let TableAssembler = require('./assemblers/ColumnTableAssembler');
+let ForeignKeyTableAssembler = require('./assemblers/ForeignKeyTableAssembler');
+let IndexTableAssembler = require('./assemblers/IndexTableAssembler');
 
 var databaseName = 'pear_sandbox';
 
@@ -16,11 +17,15 @@ function getForeignKeySQL(tableName, databaseName) {
               'left join `REFERENTIAL_CONSTRAINTS` as B on (A.CONSTRAINT_NAME = B.`CONSTRAINT_NAME`);';
 }
 
+function getIndexSQL(tableName, databaseName) {
+    return 'SHOW INDEX from ' + databaseName + '.' + tableName + ';';
+}
+
 function getTableInfo(tableNames, filePath, connection) {
   let tables = [];
   tableNames.forEach(function (tableName, index, tableNames) {
     connection.query('SHOW COLUMNS in ' + tableName, function(err, results){
-      let processor = new TableProcessor(tableName, results);
+      let processor = new TableAssembler(tableName, results);
       let tableObj = processor.getTableObj();
       tables.push(tableObj);
 
@@ -36,7 +41,7 @@ function getKeysInfo(tableNames, filePath, infoConnection, dbConnection, databas
   let keys = [];
   tableNames.forEach(function (tableName, index, tableNames) {
       infoConnection.query(getForeignKeySQL(tableName, databaseName), function (err, results) {
-          let processor = new ForeignKeyTableProcessor(tableName, results);
+          let processor = new ForeignKeyTableAssembler(tableName, results);
           keys.push(processor.getTableObj());
 
           if (tableNames.length === index + 1) {
@@ -45,6 +50,21 @@ function getKeysInfo(tableNames, filePath, infoConnection, dbConnection, databas
       });
   });
   infoConnection.end();
+    dbConnection.end();
+}
+
+function getIndexInfo(tableNames, filePath, dbConnection, databaseName) {
+    let keys = [];
+    tableNames.forEach(function (tableName, index, tableNames) {
+        dbConnection.query(getIndexSQL(tableName, databaseName), function (err, results) {
+            let processor = new IndexTableAssembler(tableName, results);
+            keys.push(processor.getTableObj());
+
+            if (tableNames.length === index + 1) {
+                writeToIndexesFile(keys, filePath);
+            }
+        });
+    });
     dbConnection.end();
 }
 
@@ -62,13 +82,19 @@ function filterTableNames(list) {
 
 function writeToTableFile(tableArray, filePath) {
     fs.writeFile(filePath, JSON.stringify(tableArray, null, '\t'), function (err) {
-        console.log('write to file');
+        console.log('write to tables file');
     })
 }
 
 function writeToKeysFile(keysArray, filePath) {
     fs.writeFile(filePath, JSON.stringify(keysArray, null, '\t'), function (err) {
         console.log('write to keys file');
+    });
+}
+
+function writeToIndexesFile(keysArray, filePath) {
+    fs.writeFile(filePath, JSON.stringify(keysArray, null, '\t'), function (err) {
+        console.log('write to indexes file');
     });
 }
 
@@ -121,6 +147,17 @@ class MysqlExtractor {
 
             getKeysInfo(filteredList, this.opts.keyFile, infoConnection, dbConnection, this.opts.database);
 
+        }.bind(this));
+    }
+
+    createIndexFile() {
+        const dbConnection = this.dbConnect();
+        dbConnection.query('SHOW TABLES', function(err, tables){
+            let list = getTableNames(tables);
+
+            let filteredList = this.opts.filterTableNames(list);
+
+            getIndexInfo(filteredList, this.opts.indexFile, dbConnection, this.opts.database);
         }.bind(this));
     }
 }

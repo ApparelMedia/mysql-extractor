@@ -1,6 +1,6 @@
 "use strict"
 
-let ForeignKeyProcessor = require('../processors/ForeignKeyProcessor');
+let IndexProcessor = require('../processors/IndexProcessor');
 /*
  {
  name: "tbl_users",
@@ -10,19 +10,19 @@ let ForeignKeyProcessor = require('../processors/ForeignKeyProcessor');
  }
 
  */
-class TableProcessor {
+class ForeignKeyTableAssembler {
     constructor(tableName, rowData) {
         this.name = tableName;
-        this.foreignKeyProcessor = new ForeignKeyProcessor(rowData);
+        this.processor = new IndexProcessor(rowData);
     }
     getName() {
         return this.name;
     }
     getTableObj() {
         let name = this.getName();
-        let foreignKeys = this.foreignKeyProcessor.getKeysArray();
+        let foreignKeys = this.processor.getArray();
         return {name, foreignKeys};
     }
 }
 
-module.exports = TableProcessor;
+module.exports = ForeignKeyTableAssembler;

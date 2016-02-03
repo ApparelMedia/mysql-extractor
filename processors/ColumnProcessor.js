@@ -77,7 +77,7 @@ class ColumnProcessor  {
     this.raw = columnInfoArray;
   }
 
-  getColumnsArray() {
+  getArray() {
     return this.raw.map(function (rowData) {
       let name = rowData.Field;
       let type = getRowType(rowData);

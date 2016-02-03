@@ -132,6 +132,6 @@ Foreign Keys
 
 ## TODO
 - [ ] Add Env File Consumption
-- [ ] Add Indexes File Feature
+- [x] Add Indexes File Feature
 - [ ] Add Unit Tests
 - [ ] Add Events
