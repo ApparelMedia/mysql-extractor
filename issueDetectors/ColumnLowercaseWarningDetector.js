@@ -6,7 +6,7 @@ class DetectorClass extends IssueDetector {
     constructor(columnsRaw, foreignKeysRaw, indexesRaw, referencesRaw) {
         super(columnsRaw, foreignKeysRaw, indexesRaw, referencesRaw);
 
-        this.type = 'error';
+        this.type = 'warning';
         this.issueName = 'column_lowercase_warning';
 
     }
