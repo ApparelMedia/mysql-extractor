@@ -23,7 +23,7 @@ class DetectorClass extends IssueDetector {
             }
 
             this.columnName.push(columnName);
-            this.reason.push(columnName + 'is a foreign key, but is not a int or bigInt');
+            this.reason.push(columnName + ' is a foreign key, but is not a int or bigInt');
             return true;
         }.bind(this)).length;
     }
