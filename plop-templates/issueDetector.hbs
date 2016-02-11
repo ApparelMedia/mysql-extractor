@@ -1,0 +1,32 @@
+'use strict';
+
+let IssueDetector = require('./IssueDetector');
+
+class DetectorClass extends IssueDetector {
+    constructor(columnsRaw, foreignKeysRaw, indexesRaw, referencesRaw) {
+        super(columnsRaw, foreignKeysRaw, indexesRaw, referencesRaw);
+
+        this.type = '{{type}}';
+        this.issueName = '{{snakeCase name}}_{{type}}';
+
+    }
+
+    detect() {
+
+        let detected = this.fks.filter(function (raw) {
+            //TODO: change raw and implement
+        }.bind(this));
+
+        return detected.length;
+    }
+
+    getReason() {
+        return this.reason;
+    }
+}
+
+function {{properCase name}}{{properCase type}}Detector(columnRaw, foreignKeyRaw, indexRaw, referencedRaw) {
+    return new DetectorClass(columnRaw, foreignKeyRaw, indexRaw, referencedRaw);
+}
+
+module.exports = {{properCase name}}{{properCase type}}Detector;

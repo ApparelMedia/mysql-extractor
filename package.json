@@ -1,16 +1,27 @@
 {
   "name": "mysql-extractor",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Create MySQL Database Schema To JSON",
   "main": "index.js",
-  "keywords": ["mysql", "database", "extract", "schema", "db"],
+  "keywords": [
+    "mysql",
+    "database",
+    "extract",
+    "schema",
+    "db",
+    "migration"
+  ],
   "scripts": {
-    "test": "node example"
+    "test": "node example",
+    "plop": "plop"
   },
   "author": "Hao Luo <howlowck@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "lodash": "^4.0.1",
     "mysql": "^2.10.2"
+  },
+  "devDependencies": {
+    "plop": "^1.4.1"
   }
 }

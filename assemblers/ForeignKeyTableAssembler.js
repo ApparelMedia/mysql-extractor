@@ -11,9 +11,9 @@ let ForeignKeyProcessor = require('../processors/ForeignKeyProcessor');
 
  */
 class ForeignKeyTableAssembler {
-    constructor(tableName, rowData) {
+    constructor(tableName, rowDataArray) {
         this.name = tableName;
-        this.processor = new ForeignKeyProcessor(rowData);
+        this.processor = new ForeignKeyProcessor(rowDataArray);
     }
     getName() {
         return this.name;
@@ -21,6 +21,7 @@ class ForeignKeyTableAssembler {
     getTableObj() {
         let name = this.getName();
         let foreignKeys = this.processor.getArray();
+        if (foreignKeys.length == 0) return undefined;
         return {name, foreignKeys};
     }
 }

@@ -10,10 +10,10 @@ let IndexProcessor = require('../processors/IndexProcessor');
  }
 
  */
-class ForeignKeyTableAssembler {
-    constructor(tableName, rowData) {
+class IndexTableAssembler {
+    constructor(tableName, rowDataArray) {
         this.name = tableName;
-        this.processor = new IndexProcessor(rowData);
+        this.processor = new IndexProcessor(rowDataArray);
     }
     getName() {
         return this.name;
@@ -21,8 +21,9 @@ class ForeignKeyTableAssembler {
     getTableObj() {
         let name = this.getName();
         let indexes = this.processor.getArray();
+        if (indexes.length == 0) return undefined;
         return {name, indexes};
     }
 }
 
-module.exports = ForeignKeyTableAssembler;
+module.exports = IndexTableAssembler;

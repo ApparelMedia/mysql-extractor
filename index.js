@@ -6,67 +6,14 @@ let fs = require('fs');
 let TableAssembler = require('./assemblers/ColumnTableAssembler');
 let ForeignKeyTableAssembler = require('./assemblers/ForeignKeyTableAssembler');
 let IndexTableAssembler = require('./assemblers/IndexTableAssembler');
+let IssueTableAssembler = require('./assemblers/IssueTableAssembler');
 
 var databaseName = 'pear_sandbox';
 
-function getForeignKeySQL(tableName, databaseName) {
-    return 'select A.COLUMN_NAME, A.REFERENCED_TABLE_NAME, A.REFERENCED_COLUMN_NAME, B.UPDATE_RULE, B.DELETE_RULE ' +
-        'from (select COLUMN_NAME,CONSTRAINT_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME ' +
-              'from KEY_COLUMN_USAGE as KEYTABLE where TABLE_SCHEMA = "' + databaseName+ '"  ' +
-              'and TABLE_NAME ="'+ tableName +'" and referenced_column_name is not NULL) as A ' +
-              'left join `REFERENTIAL_CONSTRAINTS` as B on (A.CONSTRAINT_NAME = B.`CONSTRAINT_NAME`);';
-}
-
-function getIndexSQL(tableName, databaseName) {
-    return 'SHOW INDEX from ' + databaseName + '.' + tableName + ';';
-}
-
-function getTableInfo(tableNames, filePath, connection) {
-  let tables = [];
-  tableNames.forEach(function (tableName, index, tableNames) {
-    connection.query('SHOW COLUMNS in ' + tableName, function(err, results){
-      let processor = new TableAssembler(tableName, results);
-      let tableObj = processor.getTableObj();
-      tables.push(tableObj);
-
-      if (tableNames.length === index + 1) {
-        writeToTableFile(tables, filePath);
-      }
-    });
-  });
-    connection.end();
-}
-
-function getKeysInfo(tableNames, filePath, infoConnection, dbConnection, databaseName) {
-  let keys = [];
-  tableNames.forEach(function (tableName, index, tableNames) {
-      infoConnection.query(getForeignKeySQL(tableName, databaseName), function (err, results) {
-          let processor = new ForeignKeyTableAssembler(tableName, results);
-          keys.push(processor.getTableObj());
-
-          if (tableNames.length === index + 1) {
-              writeToKeysFile(keys, filePath);
-          }
-      });
-  });
-  infoConnection.end();
-    dbConnection.end();
-}
-
-function getIndexInfo(tableNames, filePath, dbConnection, databaseName) {
-    let keys = [];
-    tableNames.forEach(function (tableName, index, tableNames) {
-        dbConnection.query(getIndexSQL(tableName, databaseName), function (err, results) {
-            let processor = new IndexTableAssembler(tableName, results);
-            keys.push(processor.getTableObj());
-
-            if (tableNames.length === index + 1) {
-                writeToIndexesFile(keys, filePath);
-            }
-        });
-    });
-    dbConnection.end();
-}
+var fkSql = require('./sqlCreators/ForeignKeySql');
+var indexSql = require('./sqlCreators/IndexSql');
+var columnSql = require('./sqlCreators/ColumnInfoSql');
+var referencedSql = require('./sqlCreators/ReferencedKeySql');
 
 function getTableNames(tables) {
     return tables.map(function (table) {
@@ -80,22 +27,42 @@ function filterTableNames(list) {
     });
 }
 
-function writeToTableFile(tableArray, filePath) {
-    fs.writeFile(filePath, JSON.stringify(tableArray, null, '\t'), function (err) {
-        console.log('write to tables file');
-    })
-}
-
-function writeToKeysFile(keysArray, filePath) {
-    fs.writeFile(filePath, JSON.stringify(keysArray, null, '\t'), function (err) {
-        console.log('write to keys file');
+function writeToFile(data, filePath, outputStr) {
+    data = data.filter( (data) => !! data );
+    fs.writeFile(filePath, JSON.stringify(data, null, '\t'), function (err) {
+        console.log(outputStr);
     });
 }
 
-function writeToIndexesFile(keysArray, filePath) {
-    fs.writeFile(filePath, JSON.stringify(keysArray, null, '\t'), function (err) {
-        console.log('write to indexes file');
+function executeActionAndWriteToFile(tableNames, filePath, dbConnection, sqlCreators, Assembler, outputStr, extra) {
+    let data = [];
+
+    /* TODO: how to take in an array of sqlCreators */
+
+    let queries = tableNames.map(function (tableName) {
+        let rowQueries = sqlCreators.map(function (sqlCreator) {
+            return new Promise(function (resolve, reject) {
+                dbConnection.query(sqlCreator(tableName, databaseName), function (err, results) {
+                    if (err) reject(err);
+                    resolve(results);
+                });
+            });
+        });
+
+        return Promise.all(rowQueries).then(function (results) {
+            let assembler = new Assembler(tableName, results, extra);
+            let obj = assembler.getTableObj();
+            data.push(obj);
+        });
     });
+
+    Promise.all(queries).then(function () {
+        writeToFile(data, filePath, outputStr);
+    }).catch(function (err) {
+        console.error(err);
+    });
+
+    dbConnection.end();
 }
 
 class MysqlExtractor {
@@ -132,21 +99,17 @@ class MysqlExtractor {
             let list = getTableNames(tables);
 
             let filteredList = this.opts.filterTableNames(list);
-
-            getTableInfo(filteredList, this.opts.tableFile, dbConnection);
+            executeActionAndWriteToFile(filteredList, this.opts.tableFile, dbConnection, [columnSql], TableAssembler, 'wrote to tables file');
         }.bind(this));
     }
 
     createForeignKeyFile() {
         const dbConnection = this.dbConnect();
-        const infoConnection = this.infoConnect();
         dbConnection.query('SHOW TABLES', function(err, tables){
             let list = getTableNames(tables);
 
             let filteredList = this.opts.filterTableNames(list);
-
-            getKeysInfo(filteredList, this.opts.keyFile, infoConnection, dbConnection, this.opts.database);
-
+            executeActionAndWriteToFile(filteredList, this.opts.keyFile, dbConnection, [fkSql], ForeignKeyTableAssembler, 'wrote to keys file');
         }.bind(this));
     }
 
@@ -156,8 +119,17 @@ class MysqlExtractor {
             let list = getTableNames(tables);
 
             let filteredList = this.opts.filterTableNames(list);
+            executeActionAndWriteToFile(filteredList, this.opts.indexFile, dbConnection, [indexSql], IndexTableAssembler, 'wrote to indexes file');
+        }.bind(this));
+    }
 
-            getIndexInfo(filteredList, this.opts.indexFile, dbConnection, this.opts.database);
+    createIssueFile() {
+        const dbConnection = this.dbConnect();
+        dbConnection.query('SHOW TABLES', function(err, tables){
+            let list = getTableNames(tables);
+
+            let filteredList = this.opts.filterTableNames(list);
+            executeActionAndWriteToFile(filteredList, this.opts.issueFile, dbConnection, [columnSql, fkSql, indexSql, referencedSql], IssueTableAssembler, 'wrote to issues file', this.opts.issues);
         }.bind(this));
     }
 }

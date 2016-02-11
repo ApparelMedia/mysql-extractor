@@ -2,7 +2,7 @@
 
 class IndexProcessor {
     constructor(keyInfoArray) {
-        this.raw = keyInfoArray;
+        this.raw = keyInfoArray[0];
     }
 
     getArray() {

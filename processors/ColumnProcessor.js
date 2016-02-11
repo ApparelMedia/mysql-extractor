@@ -74,7 +74,7 @@ function getRowType(rowData) {
 
 class ColumnProcessor  {
   constructor(columnInfoArray) {
-    this.raw = columnInfoArray;
+    this.raw = columnInfoArray[0];
   }
 
   getArray() {
