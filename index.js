@@ -82,16 +82,16 @@ class MysqlExtractor {
         return dbConnection;
     }
 
-    infoConnect() {
-        const infoConnection = mysql.createConnection({
-            host     : this.opts.host,
-            user     : this.opts.user,
-            password : this.opts.password,
-            database : 'INFORMATION_SCHEMA'
-        });
-        infoConnection.connect();
-        return infoConnection;
-    }
+    //infoConnect() {
+    //    const infoConnection = mysql.createConnection({
+    //        host     : this.opts.host,
+    //        user     : this.opts.user,
+    //        password : this.opts.password,
+    //        database : 'INFORMATION_SCHEMA'
+    //    });
+    //    infoConnection.connect();
+    //    return infoConnection;
+    //}
 
     createTableFile() {
         const dbConnection = this.dbConnect();
@@ -131,6 +131,81 @@ class MysqlExtractor {
             let filteredList = this.opts.filterTableNames(list);
             executeActionAndWriteToFile(filteredList, this.opts.issueFile, dbConnection, [columnSql, fkSql, indexSql, referencedSql], IssueTableAssembler, 'wrote to issues file', this.opts.issues);
         }.bind(this));
+    }
+
+    createDataFiles() {
+        const dbConnection = this.dbConnect();
+        let tables = this.opts.dataTables;
+        let db = this.opts.database;
+
+        tables.forEach(function (table) {
+            let filePath = this.opts.dataPath + '/' + table + '.json';
+
+
+            let colQuery = new Promise(function (resolve, reject) {
+                dbConnection.query('show columns from ' + db + '.' + table, function (error, columns) {
+                    if (error) reject(error);
+                    let colArray = columns.map(function (col) {
+                        if (col.Type === 'geometry') {
+                            return 'AsText(' + col.Field + ')';
+                        }
+                        return col.Field;
+                    });
+                    resolve(colArray);
+                });
+            });
+
+            function startFileWrite(cols) {
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (e) {}
+
+                let fileStream = fs.createWriteStream(filePath, {'flags': 'a'});
+                fileStream.write('[\n');
+                return {columns: cols, file: fileStream};
+            }
+
+            let dataQuery = function (data) {
+                let cols = data.columns;
+                let file = data.file;
+                let columnsStr = cols.join(', ');
+                let sql = 'select ' + columnsStr + ' from ' + db + '.' + table ;
+                const conn = this.dbConnect();
+                var split = '\t';
+                let dataQuery = new Promise(function (resolve, reject) {
+                    conn.query(sql, function (error, rows) {
+                        if (typeof rows === 'undefined') return;
+                        rows.forEach(function (row) {
+                            file.write(split + JSON.stringify(_.values(row)));
+                            if (split === '\t') {
+                                split = ",\n\t";
+                            }
+                        });
+
+                        resolve(file);
+                    });
+                });
+                conn.end();
+
+                return dataQuery;
+            };
+
+            function endFileWrite(fileStream) {
+                fileStream.end('\n]');
+                console.log('wrote to ' + fileStream.path);
+            }
+
+            colQuery
+                .then(startFileWrite)
+                .then(dataQuery.bind(this))
+                .then(endFileWrite)
+                .catch(function (error) {
+                    console.error(error);
+                });
+
+
+        }.bind(this));
+        dbConnection.end();
     }
 }
 
