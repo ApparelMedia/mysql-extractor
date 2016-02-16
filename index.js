@@ -172,14 +172,13 @@ class MysqlExtractor {
                 let sql = 'select ' + columnsStr + ' from ' + db + '.' + table ;
                 const conn = this.dbConnect();
                 var split = '\t';
+                file.write(split + JSON.stringify(data.columns));
+                split = ",\n\t";
                 let dataQuery = new Promise(function (resolve, reject) {
                     conn.query(sql, function (error, rows) {
                         if (typeof rows === 'undefined') return;
                         rows.forEach(function (row) {
                             file.write(split + JSON.stringify(_.values(row)));
-                            if (split === '\t') {
-                                split = ",\n\t";
-                            }
                         });
 
                         resolve(file);
