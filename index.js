@@ -8,14 +8,13 @@ let ForeignKeyTableAssembler = require('./assemblers/ForeignKeyTableAssembler');
 let IndexTableAssembler = require('./assemblers/IndexTableAssembler');
 let IssueTableAssembler = require('./assemblers/IssueTableAssembler');
 
-var databaseName = 'pear_sandbox';
 
 var fkSql = require('./sqlCreators/ForeignKeySql');
 var indexSql = require('./sqlCreators/IndexSql');
 var columnSql = require('./sqlCreators/ColumnInfoSql');
 var referencedSql = require('./sqlCreators/ReferencedKeySql');
 
-function getTableNames(tables) {
+function getTableNames(tables, databaseName) {
     return tables.map(function (table) {
         return table["Tables_in_" + databaseName];
     });
@@ -34,7 +33,7 @@ function writeToFile(data, filePath, outputStr) {
     });
 }
 
-function executeActionAndWriteToFile(tableNames, filePath, dbConnection, sqlCreators, Assembler, outputStr, extra) {
+function executeActionAndWriteToFile(tableNames, databaseName, filePath, dbConnection, sqlCreators, Assembler, outputStr, extra) {
     let data = [];
 
     /* TODO: how to take in an array of sqlCreators */
@@ -68,6 +67,7 @@ function executeActionAndWriteToFile(tableNames, filePath, dbConnection, sqlCrea
 class MysqlExtractor {
     constructor(opts) {
         this.opts = opts;
+        this.database = opts.database;
         this.opts.filterTableNames = this.opts.filterTableNames || filterTableNames;
 
     }
@@ -96,40 +96,40 @@ class MysqlExtractor {
     createTableFile() {
         const dbConnection = this.dbConnect();
         dbConnection.query('SHOW TABLES', function(err, tables){
-            let list = getTableNames(tables);
+            let list = getTableNames(tables, this.database);
 
             let filteredList = this.opts.filterTableNames(list);
-            executeActionAndWriteToFile(filteredList, this.opts.tableFile, dbConnection, [columnSql], TableAssembler, 'wrote to tables file');
+            executeActionAndWriteToFile(filteredList, this.database, this.opts.tableFile, dbConnection, [columnSql], TableAssembler, 'wrote to tables file');
         }.bind(this));
     }
 
     createForeignKeyFile() {
         const dbConnection = this.dbConnect();
         dbConnection.query('SHOW TABLES', function(err, tables){
-            let list = getTableNames(tables);
+            let list = getTableNames(tables, this.database);
 
             let filteredList = this.opts.filterTableNames(list);
-            executeActionAndWriteToFile(filteredList, this.opts.keyFile, dbConnection, [fkSql], ForeignKeyTableAssembler, 'wrote to keys file');
+            executeActionAndWriteToFile(filteredList, this.database, this.opts.keyFile, dbConnection, [fkSql], ForeignKeyTableAssembler, 'wrote to keys file');
         }.bind(this));
     }
 
     createIndexFile() {
         const dbConnection = this.dbConnect();
         dbConnection.query('SHOW TABLES', function(err, tables){
-            let list = getTableNames(tables);
+            let list = getTableNames(tables, this.database);
 
             let filteredList = this.opts.filterTableNames(list);
-            executeActionAndWriteToFile(filteredList, this.opts.indexFile, dbConnection, [indexSql], IndexTableAssembler, 'wrote to indexes file');
+            executeActionAndWriteToFile(filteredList, this.database, this.opts.indexFile, dbConnection, [indexSql], IndexTableAssembler, 'wrote to indexes file');
         }.bind(this));
     }
 
     createIssueFile() {
         const dbConnection = this.dbConnect();
         dbConnection.query('SHOW TABLES', function(err, tables){
-            let list = getTableNames(tables);
+            let list = getTableNames(tables, this.database);
 
             let filteredList = this.opts.filterTableNames(list);
-            executeActionAndWriteToFile(filteredList, this.opts.issueFile, dbConnection, [columnSql, fkSql, indexSql, referencedSql], IssueTableAssembler, 'wrote to issues file', this.opts.issues);
+            executeActionAndWriteToFile(filteredList, this.database, this.opts.issueFile, dbConnection, [columnSql, fkSql, indexSql, referencedSql], IssueTableAssembler, 'wrote to issues file', this.opts.issues);
         }.bind(this));
     }
 
