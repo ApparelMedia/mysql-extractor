@@ -147,7 +147,7 @@ class MysqlExtractor {
                     if (error) reject(error);
                     let colArray = columns.map(function (col) {
                         if (col.Type === 'geometry') {
-                            return 'AsText(' + col.Field + ')';
+                            return 'HEX(AsWKB(' + col.Field + ')) as ' + col.Field;
                         }
                         return col.Field;
                     });
@@ -165,6 +165,19 @@ class MysqlExtractor {
                 return {columns: cols, file: fileStream};
             }
 
+            function processColumns(cols) {
+                return cols.map(function (column) {
+                    if (column.indexOf('HEX\(AsWKB\(') < 0) {
+                        return column;
+                    }
+                    let re = /as\s(.*)$/;
+                    let match;
+                    if ((match = re.exec(column)) !== null) {
+                        return match[1];
+                    }
+                });
+            }
+
             let dataQuery = function (data) {
                 let cols = data.columns;
                 let file = data.file;
@@ -172,7 +185,7 @@ class MysqlExtractor {
                 let sql = 'select ' + columnsStr + ' from ' + db + '.' + table ;
                 const conn = this.dbConnect();
                 var split = '\t';
-                file.write(split + JSON.stringify(data.columns));
+                file.write(split + JSON.stringify(processColumns(data.columns)));
                 split = ",\n\t";
                 let dataQuery = new Promise(function (resolve, reject) {
                     conn.query(sql, function (error, rows) {
