@@ -1,6 +1,6 @@
 {
   "name": "mysql-extractor",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Create MySQL Database Schema To JSON",
   "main": "index.js",
   "keywords": [
