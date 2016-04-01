@@ -14,7 +14,8 @@ class IndexProcessor {
             let column = rawKeyInfo.Column_name;
             let unique = ! rawKeyInfo.Non_unique;
             let indexType = rawKeyInfo.Index_type;
-            return {column, unique, indexType};
+            let keyName = rawKeyInfo.Key_name;
+            return {column, unique, indexType, keyName};
         })
     }
 }

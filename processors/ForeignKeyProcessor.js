@@ -12,7 +12,8 @@ class ForeignKeyProcessor {
             let references = rawKeyInfo.REFERENCED_COLUMN_NAME;
             let onUpdate = rawKeyInfo.UPDATE_RULE.toLowerCase();
             let onDelete = rawKeyInfo.DELETE_RULE.toLowerCase();
-            return {foreign, references, on, onUpdate, onDelete };
+            let constraintName = rawKeyInfo.CONSTRAINT_NAME;
+            return {foreign, references, on, onUpdate, onDelete, constraintName};
         })
     }
 }
